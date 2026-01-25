@@ -81,5 +81,30 @@ cd /home/vagrant
 sudo pip3 install scapy
 git clone https://github.com/ebiken/sendpacket
 
+# Update and install Docker if not present
+if ! command -v docker &> /dev/null; then
+    curl -fsSL https://get.docker.com -o get-docker.sh
+    sh get-docker.sh
+    # Add the 'vagrant' user to the docker group so you don't need 'sudo'
+    usermod -aG docker vagrant
+fi
+
+# 2. Always pull the latest p4c image
+echo "Pulling latest P4C image..."
+docker pull antoninbas/p4c-lite:latest
+
+# 3. Create a 'p4c' wrapper script
+# This makes 'p4c' act like a native command inside the VM
+cat <<EOF > /usr/local/bin/p4c-pna-p4tc
+#!/bin/bash
+# Mount the current directory into the container
+docker run --rm -v \$(pwd):/workdir -w /workdir antoninbas/p4c-lite:latest p4c-pna-p4tc "\$@"
+EOF
+
+# Make the wrapper executable
+chmod +x /usr/local/bin/p4c-pna-p4tc
+
+chown vagrant:vagrant -R p4tc-examples-pub
+
 #running depmod
 depmod -a
